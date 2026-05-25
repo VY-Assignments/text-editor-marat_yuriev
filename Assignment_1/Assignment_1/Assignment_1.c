@@ -154,11 +154,62 @@ void Print()
 
 // ================================ Task 6 ================================
 
-void InsertLine()
+void InsertLine(char user_text[], int line, int index)
 {
+    Node* current = head;
+    Node* prev = NULL;
 
+    int currentLine = 0;
+    int currentIndex = 0;
+
+    while (current != NULL && currentLine < line)
+    {
+        if (current->x == '\n')
+            currentLine++;
+
+        prev = current;
+        current = current->next;
+    }
+
+    if (current == NULL && currentLine < line)
+        return;
+
+    while (current != NULL && current->x != '\n' && currentIndex < index)
+    {
+        prev = current;
+        current = current->next;
+        currentIndex++;
+    }
+
+    for (int i = 0; user_text[i] != '\0'; i++)
+    {
+        if (user_text[i] == '\n')
+            continue;
+
+        Node* newNode = CreateNode(user_text[i]);
+
+        if (prev == NULL)
+        {
+            newNode->next = head;
+            head = newNode;
+        }
+        else
+        {
+            newNode->next = current;
+            prev->next = newNode;
+        }
+
+        prev = newNode;
+    }
 }
 
+// ================================ Task 7 ================================
+
+void Search(char user_text[])
+{
+    Node* current = head;
+
+}
 
 //================================ Main Function ================================
 
@@ -174,7 +225,7 @@ int main(void)
         "3.Use files to save the information\n"
         "4.Use files to load the information\n"
         "5.Print the current text to console\n"
-        "6.Insert the text by line and symbol index\n"
+        "6.Insert the text by line and symsbol index\n"
         "7.Search\n"
         "8.Clearing the console\n");
     while (true)
@@ -182,52 +233,64 @@ int main(void)
         scanf_s("%d", &user_choice);
         while (getchar() != '\n');
 
-            switch (user_choice)
-            {
-            case 1:
-                printf("Write text to append:\n");
-                fgets(user_input, sizeof(user_input), stdin);
-                Append(user_input);
-                break;
+        switch (user_choice)
+        {
+        case 1:
+            printf("Write text to append:\n");
+            fgets(user_input, sizeof(user_input), stdin);
+            Append(user_input);
+            break;
 
-            case 2:
-                StartNewLine();
-                Printf("A new line was added");
-                break;
+        case 2:
+            StartNewLine();
+            printf("A new line was added\n");
+            break;
 
-            case 3:
-                printf("Enter file name to save:\n");
-                fgets(filename, sizeof(filename), stdin);
-                filename[strcspn(filename, "\r\n")] = 0;
-                SaveInfo(filename);
-                break;
+        case 3:
+            printf("Enter file name to save:\n");
+            fgets(filename, sizeof(filename), stdin);
+            filename[strcspn(filename, "\r\n")] = 0;
+            SaveInfo(filename);
+            break;
 
-            case 4:
-                printf("Enter file name to load:\n");
-                fgets(filename, sizeof(filename), stdin);
-                filename[strcspn(filename, "\r\n")] = 0;
-                LoadFile(filename);
-                break;
+        case 4:
+            printf("Enter file name to load:\n");
+            fgets(filename, sizeof(filename), stdin);
+            filename[strcspn(filename, "\r\n")] = 0;
+            LoadFile(filename);
+            break;
 
-            case 5:
-                Print();
-                break;
+        case 5:
+            Print();
+            break;
 
-            case 6:
-                InsertLine();
-                break;
+        case 6:
+        {
+            int line, index;
 
-            case 7:
-                break;
+            printf("Choose line and index (example: 0 5):\n");
+            scanf_s("%d %d", &line, &index);
+            while (getchar() != '\n');
 
-            case 8:
-                FreeList();
-                return 0;
+            printf("Enter text to insert:\n");
+            fgets(user_input, sizeof(user_input), stdin);
 
-            default:
-                printf("Wrong command\n");
-                break;
-            }
+            InsertLine(user_input, line, index);
+            break;
+        }
+
+        case 7:
+            Search(user_input);
+            break;
+
+        case 8:
+            FreeList();
+            return 0;
+
+        default:
+            printf("Wrong command\n");
+            break;
+        }
     }
         
 }
