@@ -46,20 +46,6 @@ void AppendNode(Node* newNode)
     current->next = newNode;
 }
 
-void FreeList()
-{
-    Node* current = head;
-
-    while (current != NULL)
-    {
-        Node* temp = current;
-        current = current->next;
-        free(temp);
-    }
-
-    head = NULL;
-}
-
 char* ReadLine()
 {
     int size = 20;
@@ -73,11 +59,11 @@ char* ReadLine()
         return NULL;
     }
 
-    int ch;
+    int user_input;
 
-    while ((ch = getchar()) != '\n' && ch != EOF)
+    while ((user_input = getchar()) != '\n' && user_input != EOF)
     {
-        buffer[length] = ch;
+        buffer[length] = user_input;
         length++;
 
         if (length >= size - 1)
@@ -321,6 +307,22 @@ void Search(char user_text[])
     {
         printf("Text not found\n");
     }
+}
+    
+// ================================ Task 8 ================================
+
+void FreeList()
+{
+    Node* current = head;
+
+    while (current != NULL)
+    {
+        Node* temp = current;
+        current = current->next;
+        free(temp);
+    }
+
+    head = NULL;
 }
 
 //================================ Main Function ================================
