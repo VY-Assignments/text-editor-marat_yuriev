@@ -12,7 +12,7 @@ typedef struct Node
 
 Node* head = NULL;
 
-Node* CreateNode(double value_x)
+Node* CreateNode(char value_x)
 {
     Node* newNode = (Node*)malloc(sizeof(Node));
     if (newNode == NULL) 
@@ -24,39 +24,52 @@ Node* CreateNode(double value_x)
     newNode->next = NULL;
     return newNode; 
 }
-// ================================ All Logic ================================
+// ================================ Useful Function ================================
+void AppendNode(Node* newNode)
+{
+    if (newNode == NULL)
+        return;
+
+    if (head == NULL)
+    {
+        head = newNode;
+        return;
+    }
+
+    Node* current = head;
+
+    while (current->next != NULL)
+    {
+        current = current->next;
+    }
+
+    current->next = newNode;
+}
+
+// ================================ Task 1 ================================
 
 void Append(char user_text[])
 {
     int i = 0;
+
     while (user_text[i] != '\0')
     {
+        if (user_text[i] == '\n')
+            break;
+
         Node* newNode = CreateNode(user_text[i]);
+        AppendNode(newNode);
 
-        if (newNode == NULL)
-        {
-            return;
-        }
-
-        if (head == NULL)
-        {
-            head = newNode;
-        }
-
-        else
-        {
-            Node* current = head;
-            
-            while (current->next != NULL)
-            {
-                current = current->next;
-            }
-            current->next = newNode;
-        }
-        
         i++;
     }
 }
+// ================================ Task 2 ================================
+
+void StartNewLine()
+{
+    AppendNode(CreateNode('\n'));
+}
+
 
 //================================ Main Function ================================
 
@@ -78,18 +91,20 @@ int main(void)
             "7.Clearing the console\n");
 
         scanf_s("%d", &user_choice);
-        getchar();
+        while (getchar() != '\n');
 
         switch (user_choice)
         {   
 
         case(1):
-
             printf("Write text which you want to append\n");
             fgets(user_input, sizeof(user_input), stdin);
             Append(user_input);
             break;
+
         case(2):
+            StartNewLine();
+            break;
 
         default:
             printf("Wrong Command\n");
