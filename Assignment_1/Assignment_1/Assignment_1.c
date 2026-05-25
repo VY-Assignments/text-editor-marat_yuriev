@@ -209,6 +209,40 @@ void Search(char user_text[])
 {
     Node* current = head;
 
+    int currentLine = 0;
+    int currentIndex = 0;
+
+    while (current != NULL)
+    {
+        Node* scan = current;
+        int i = 0;
+
+        while (scan != NULL && user_text[i] != '\0')
+        {
+            if (scan->x != user_text[i])
+                break;
+
+            scan = scan->next;
+            i++;
+        }
+
+        if (user_text[i] == '\0')
+        {
+            printf("Found at: %d %d\n", currentLine, currentIndex);
+        }
+
+        if (current->x == '\n')
+        {
+            currentLine++;
+            currentIndex = 0;
+        }
+        else
+        {
+            currentIndex++;
+        }
+
+        current = current->next;
+    }
 }
 
 //================================ Main Function ================================
@@ -216,6 +250,7 @@ void Search(char user_text[])
 int main(void)
 {
     char user_input[1000];
+    char search_input[100];
     char filename[100];
     int user_choice;
     printf(
@@ -280,7 +315,15 @@ int main(void)
         }
 
         case 7:
-            Search(user_input);
+
+            printf("Choose word to search:\n");
+
+            fgets(search_input, sizeof(search_input), stdin);
+
+            search_input[strcspn(search_input, "\n")] = '\0';
+
+            Search(search_input);
+
             break;
 
         case 8:
