@@ -60,6 +60,51 @@ void FreeList()
     head = NULL;
 }
 
+char* ReadLine()
+{
+    int size = 20;
+    int length = 0;
+
+    char* buffer = malloc(size);
+
+    if (buffer == NULL)
+    {
+        printf("Memory allocation error\n");
+        return NULL;
+    }
+
+    int ch;
+
+    while ((ch = getchar()) != '\n' && ch != EOF)
+    {
+        buffer[length] = ch;
+        length++;
+
+        if (length >= size - 1)
+        {
+            size *= 2;
+
+            char* temp = realloc(buffer, size);
+
+            if (temp == NULL)
+            {
+                free(buffer);
+                printf("Memory allocation error\n");
+                return NULL;
+            }
+
+            buffer = temp;
+        }
+    }
+
+
+    buffer[length] = '\0';
+
+    printf("Input length: %d\n", length);
+
+    return buffer;
+}
+
 
 // ================================ Task 1 ================================
 
@@ -125,7 +170,7 @@ void LoadFile(const char filename[])
 
     FreeList();
 
-    char ch;
+    int ch;
 
     while ((ch = fgetc(file)) != EOF)
     {
@@ -142,6 +187,12 @@ void LoadFile(const char filename[])
 void Print()
 {
     Node* current = head;
+
+    if (head == NULL)
+    {
+        printf("Buffer is empty\n");
+        return;
+    }
 
     while (current != NULL)
     {
@@ -171,8 +222,11 @@ void InsertLine(char user_text[], int line, int index)
         current = current->next;
     }
 
-    if (current == NULL && currentLine < line)
+    if (currentIndex < index)
+    {
+        printf("Error: index out of range\n");
         return;
+    }
 
     while (current != NULL && current->x != '\n' && currentIndex < index)
     {
@@ -181,10 +235,16 @@ void InsertLine(char user_text[], int line, int index)
         currentIndex++;
     }
 
+    if (current == NULL && currentIndex < index)
+    {
+        printf("Error: index out of range\n");
+        return;
+    }
+
     for (int i = 0; user_text[i] != '\0'; i++)
     {
         if (user_text[i] == '\n')
-            continue;
+            break;
 
         Node* newNode = CreateNode(user_text[i]);
 
@@ -207,7 +267,15 @@ void InsertLine(char user_text[], int line, int index)
 
 void Search(char user_text[])
 {
+
+    bool found = false;
     Node* current = head;
+
+    if (head == NULL)
+    {
+        printf("Buffer is empty\n");
+        return;
+    }
 
     int currentLine = 0;
     int currentIndex = 0;
@@ -219,6 +287,9 @@ void Search(char user_text[])
 
         while (scan != NULL && user_text[i] != '\0')
         {
+            if (scan->x == '\n')
+                break;
+
             if (scan->x != user_text[i])
                 break;
 
@@ -228,6 +299,7 @@ void Search(char user_text[])
 
         if (user_text[i] == '\0')
         {
+            found = true;
             printf("Found at: %d %d\n", currentLine, currentIndex);
         }
 
@@ -241,7 +313,13 @@ void Search(char user_text[])
             currentIndex++;
         }
 
+
         current = current->next;
+    }
+
+    if (!found)
+    {
+        printf("Text not found\n");
     }
 }
 
@@ -249,9 +327,6 @@ void Search(char user_text[])
 
 int main(void)
 {
-    char user_input[1000];
-    char search_input[100];
-    char filename[100];
     int user_choice;
     printf(
         "Choose the command(Enter 1 or 2...7): \n"
@@ -272,8 +347,13 @@ int main(void)
         {
         case 1:
             printf("Write text to append:\n");
-            fgets(user_input, sizeof(user_input), stdin);
-            Append(user_input);
+            char* user_input = ReadLine();
+
+            if (user_input != NULL)
+            {
+                Append(user_input);
+                free(user_input);
+            }
             break;
 
         case 2:
@@ -283,17 +363,26 @@ int main(void)
 
         case 3:
             printf("Enter file name to save:\n");
-            fgets(filename, sizeof(filename), stdin);
-            filename[strcspn(filename, "\r\n")] = 0;
-            SaveInfo(filename);
+
+            char* filename = ReadLine();
+
+            if (filename != NULL)
+            {
+                SaveInfo(filename);
+                free(filename);
+            }
             break;
 
         case 4:
             printf("Enter file name to load:\n");
-            fgets(filename, sizeof(filename), stdin);
-            filename[strcspn(filename, "\r\n")] = 0;
-            LoadFile(filename);
-            break;
+
+            char* filename = ReadLine();
+
+            if (filename != NULL)
+            {
+                LoadFile(filename);
+                free(filename);
+            }
 
         case 5:
             Print();
@@ -308,9 +397,13 @@ int main(void)
             while (getchar() != '\n');
 
             printf("Enter text to insert:\n");
-            fgets(user_input, sizeof(user_input), stdin);
+            char* user_input = ReadLine();
 
-            InsertLine(user_input, line, index);
+            if (user_input != NULL)
+            {
+                InsertLine(user_input, line, index);
+                free(user_input);
+            }
             break;
         }
 
@@ -318,11 +411,13 @@ int main(void)
 
             printf("Choose word to search:\n");
 
-            fgets(search_input, sizeof(search_input), stdin);
+            char* search_input = ReadLine();
 
-            search_input[strcspn(search_input, "\n")] = '\0';
-
-            Search(search_input);
+            if (search_input != NULL)
+            {
+                Search(search_input);
+                free(search_input);
+            }
 
             break;
 
