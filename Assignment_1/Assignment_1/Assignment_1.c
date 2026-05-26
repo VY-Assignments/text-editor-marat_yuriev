@@ -12,6 +12,8 @@ typedef struct Node
 
 Node* head = NULL;
 
+void FreeList(void);
+
 Node* CreateNode(char value_x)
 {
     Node* newNode = (Node*)malloc(sizeof(Node));
@@ -86,8 +88,6 @@ char* ReadLine()
 
     buffer[length] = '\0';
 
-    printf("Input length: %d\n", length);
-
     return buffer;
 }
 
@@ -108,6 +108,8 @@ void Append(char user_text[])
 
         i++;
     }
+    printf("Text was appended\n");
+    return;
 }
 // ================================ Task 2 ================================
 
@@ -208,12 +210,6 @@ void InsertLine(char user_text[], int line, int index)
         current = current->next;
     }
 
-    if (currentIndex < index)
-    {
-        printf("Error: index out of range\n");
-        return;
-    }
-
     while (current != NULL && current->x != '\n' && currentIndex < index)
     {
         prev = current;
@@ -221,7 +217,7 @@ void InsertLine(char user_text[], int line, int index)
         currentIndex++;
     }
 
-    if (current == NULL && currentIndex < index)
+    if (currentIndex < index)
     {
         printf("Error: index out of range\n");
         return;
@@ -366,25 +362,26 @@ int main(void)
         case 3:
             printf("Enter file name to save:\n");
 
-            char* filename = ReadLine();
+            char* filename_save = ReadLine();
 
-            if (filename != NULL)
+            if (filename_save != NULL)
             {
-                SaveInfo(filename);
-                free(filename);
+                SaveInfo(filename_save);
+                free(filename_save);
             }
             break;
 
         case 4:
             printf("Enter file name to load:\n");
 
-            char* filename = ReadLine();
+            char* filename_load = ReadLine();
 
-            if (filename != NULL)
+            if (filename_load != NULL)
             {
-                LoadFile(filename);
-                free(filename);
+                LoadFile(filename_load);
+                free(filename_load);
             }
+            break;
 
         case 5:
             Print();
