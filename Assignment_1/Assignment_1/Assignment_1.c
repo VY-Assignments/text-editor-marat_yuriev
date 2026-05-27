@@ -50,7 +50,7 @@ void AppendNode(Node* newNode)
 
 char* ReadLine()
 {
-    int size = 20;
+    int size = 200;
     int length = 0;
 
     char* buffer = malloc(size);
@@ -204,30 +204,37 @@ void InsertLine(char user_text[], int line, int index)
     while (current != NULL && currentLine < line)
     {
         if (current->x == '\n')
+        {
             currentLine++;
+        }
 
         prev = current;
         current = current->next;
     }
 
-    while (current != NULL && current->x != '\n' && currentIndex < index)
+    if (currentLine != line)
+    {
+        printf("Line does not exist\n");
+        return;
+    }
+
+    while (current != NULL &&
+        current->x != '\n' &&
+        currentIndex < index)
     {
         prev = current;
         current = current->next;
         currentIndex++;
     }
 
-    if (currentIndex < index)
+    if (currentIndex != index)
     {
-        printf("Error: index out of range\n");
+        printf("Index out of range\n");
         return;
     }
 
     for (int i = 0; user_text[i] != '\0'; i++)
     {
-        if (user_text[i] == '\n')
-            break;
-
         Node* newNode = CreateNode(user_text[i]);
 
         if (prev == NULL)
@@ -243,6 +250,8 @@ void InsertLine(char user_text[], int line, int index)
 
         prev = newNode;
     }
+
+    printf("Text inserted successfully\n");
 }
 
 // ================================ Task 7 ================================
