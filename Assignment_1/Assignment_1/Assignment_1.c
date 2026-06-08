@@ -16,8 +16,24 @@ typedef struct {
     int index;           
 } Cursor;
 
+// ================================ Undo/Redo Stack ================================
+
+typedef struct {
+    Node* snapshot;
+    int snapshot_size;  
+} StackState;
+
+typedef struct {
+    StackState* states;
+    int top;           
+    int max_size; 
+} Stack;
+
 Node* head = NULL;
 Cursor cursor = { NULL, 0, 0 };
+
+Stack undo_stack;
+Stack redo_stack;
 
 void FreeList(void);
 
@@ -33,6 +49,99 @@ Node* CreateNode(char value_x)
     newNode->next = NULL;
     return newNode;
 }
+
+void InitializeStacks()
+{
+    undo_stack.max_size = 5; 
+    undo_stack.top = -1;
+    undo_stack.states = (StackState*)malloc(sizeof(StackState) * undo_stack.max_size);
+
+    redo_stack.max_size = 5; 
+    redo_stack.top = -1;
+    redo_stack.states = (StackState*)malloc(sizeof(StackState) * redo_stack.max_size);
+}
+
+Node* CopyLinkedList(Node* source)
+{
+    if (source == NULL)
+        return NULL;
+
+    Node* newHead = CreateNode(source->x);
+    Node* newCurrent = newHead;
+    Node* current = source->next;
+
+    while (current != NULL)
+    {
+        Node* newNode = CreateNode(current->x);
+        newCurrent->next = newNode;
+        newCurrent = newNode;
+        current = current->next;
+    }
+
+    return newHead;
+}
+
+void FreeLinkedListCopy(Node* node)
+{
+    while (node != NULL)
+    {
+        Node* temp = node;
+        node = node->next;
+        free(temp);
+    }
+}
+
+int CountCharacters(Node* node)
+{
+    int count = 0;
+    while (node != NULL)
+    {
+        count++;
+        node = node->next;
+    }
+    return count;
+}
+
+void SaveStateToUndoStack()
+{
+    if (undo_stack.top >= undo_stack.max_size - 1)
+    {
+        printf("Undo stack is full. Oldest action will be removed.\n");
+
+        FreeLinkedListCopy(undo_stack.states[0].snapshot);
+        for (int i = 0; i < undo_stack.top; i++)
+        {
+            undo_stack.states[i] = undo_stack.states[i + 1];
+        }
+        undo_stack.top--;
+    }
+
+    undo_stack.top++;
+    undo_stack.states[undo_stack.top].snapshot = CopyLinkedList(head);
+    undo_stack.states[undo_stack.top].snapshot_size = CountCharacters(head);
+
+    for (int i = 0; i <= redo_stack.top; i++)
+    {
+        FreeLinkedListCopy(redo_stack.states[i].snapshot);
+    }
+    redo_stack.top = -1;
+}
+
+void FreeStacks()
+{
+    for (int i = 0; i <= undo_stack.top; i++)
+    {
+        FreeLinkedListCopy(undo_stack.states[i].snapshot);
+    }
+    free(undo_stack.states);
+
+    for (int i = 0; i <= redo_stack.top; i++)
+    {
+        FreeLinkedListCopy(redo_stack.states[i].snapshot);
+    }
+    free(redo_stack.states);
+}
+
 // ================================ Useful Function ================================
 void AppendNode(Node* newNode)
 {
@@ -115,6 +224,7 @@ void Append(char user_text[])
 
         i++;
     }
+    SaveStateToUndoStack();
     printf("Text was appended\n");
     return;
 }
@@ -123,6 +233,7 @@ void Append(char user_text[])
 void StartNewLine()
 {
     AppendNode(CreateNode('\n'));
+    SaveStateToUndoStack();
 }
 
 // ================================ Task 3 ================================ 
@@ -257,7 +368,7 @@ void InsertLine(char user_text[], int line, int index)
 
         prev = newNode;
     }
-
+    SaveStateToUndoStack();
     printf("Text inserted successfully\n");
 }
 
@@ -382,11 +493,69 @@ void Delete(int num_chars)
 
     cursor.position = current;
 
+    SaveStateToUndoStack();
     printf("Deleted %d characters\n", deleted);
 }
-    
 
 // ================================ Task 9 ================================
+
+void Undo()
+{
+    if (undo_stack.top < 0)
+    {
+        printf("Nothing to undo\n");
+        return;
+    }
+
+    if (redo_stack.top < redo_stack.max_size - 1)
+    {
+        redo_stack.top++;
+        redo_stack.states[redo_stack.top].snapshot = CopyLinkedList(head);
+        redo_stack.states[redo_stack.top].snapshot_size = CountCharacters(head);
+    }
+
+    FreeLinkedListCopy(head);
+    head = CopyLinkedList(undo_stack.states[undo_stack.top].snapshot);
+    cursor.position = head;
+    cursor.line = 0;
+    cursor.index = 0;
+
+    FreeLinkedListCopy(undo_stack.states[undo_stack.top].snapshot);
+    undo_stack.top--;
+
+    printf("Undo executed\n");
+}
+
+// ================================ Task 10 ================================
+    
+void Redo()
+{
+    if (redo_stack.top < 0)
+    {
+        printf("Nothing to redo\n");
+        return;
+    }
+
+    if (undo_stack.top < undo_stack.max_size - 1)
+    {
+        undo_stack.top++;
+        undo_stack.states[undo_stack.top].snapshot = CopyLinkedList(head);
+        undo_stack.states[undo_stack.top].snapshot_size = CountCharacters(head);
+    }
+
+    FreeLinkedListCopy(head);
+    head = CopyLinkedList(redo_stack.states[redo_stack.top].snapshot);
+    cursor.position = head;
+    cursor.line = 0;
+    cursor.index = 0;
+
+    FreeLinkedListCopy(redo_stack.states[redo_stack.top].snapshot);
+    redo_stack.top--;
+
+    printf("Redo executed\n");
+}
+
+// ================================ Task 11 ================================
 
 void MoveCursorToPosition(int line, int index)
 {
@@ -427,7 +596,7 @@ void MoveCursorToPosition(int line, int index)
     printf("Cursor moved to Line %d, Index %d\n", line, index);
 }
 
-// ================================ Task 10 ================================
+// ================================ Task 12 ================================
 
 void DisplayCursorPosition()
 {
@@ -442,7 +611,7 @@ void DisplayCursorPosition()
     }
 }
 
-// ================================ Task 11 ================================
+// ================================ Task 13 ================================
 
 void FreeList()
 {
@@ -463,6 +632,7 @@ void FreeList()
 
 int main(void)
 {
+    InitializeStacks();
     int user_choice;
     printf(
         "Choose the command(Enter 1 or 2...7): \n"
@@ -474,9 +644,11 @@ int main(void)
         "6.Insert the text by line and symsbol index\n"
         "7.Search\n"
         "8.Delete command\n"
-        "9.Move cursor to position (line, index)\n"
-        "10.Display cursor position\n"
-        "11.Clearing the console\n");
+        "9.Undo command\n"
+        "10.Redo command\n"
+        "11.Move cursor to position (line, index)\n"
+        "12.Display cursor position\n"
+        "13.Clearing the console\n");
     while (true)
     {
         scanf_s("%d", &user_choice);
@@ -572,6 +744,14 @@ int main(void)
         }
 
         case 9:
+            Undo();  
+            break;
+
+        case 10:
+            Redo(); 
+            break;
+
+        case 11:
         {
             int line, index;
             printf("Enter line and index:\n");
@@ -581,18 +761,18 @@ int main(void)
             break;
         }
 
-        case 10:
+        case 12:
             DisplayCursorPosition();
             break;
 
-        case 11:
+        case 13:
             FreeList();
+            FreeStacks();
             return 0;
 
         default:
             printf("Wrong command\n");
             break;
         }
-    }
-        
+    }       
 }
