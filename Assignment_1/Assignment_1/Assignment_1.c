@@ -29,26 +29,10 @@ typedef struct {
     int max_size; 
 } Stack;
 
-Node* head = NULL;
-Cursor cursor = { NULL, 0, 0 };
-
 Stack undo_stack;
 Stack redo_stack;
-
-void FreeList(void);
-
-Node* CreateNode(char value_x)
-{
-    Node* newNode = (Node*)malloc(sizeof(Node));
-    if (newNode == NULL)
-    {
-        printf("Memory allocation error\n");
-        return NULL;
-    }
-    newNode->x = value_x;
-    newNode->next = NULL;
-    return newNode;
-}
+Node* head = NULL;
+Cursor cursor = { NULL, 0, 0 };
 
 void InitializeStacks()
 {
@@ -60,6 +44,8 @@ void InitializeStacks()
     redo_stack.top = -1;
     redo_stack.states = (StackState*)malloc(sizeof(StackState) * redo_stack.max_size);
 }
+
+Node* CreateNode(char value_x);
 
 Node* CopyLinkedList(Node* source)
 {
@@ -140,6 +126,52 @@ void FreeStacks()
         FreeLinkedListCopy(redo_stack.states[i].snapshot);
     }
     free(redo_stack.states);
+}
+
+// ================================ Clipboard ================================
+
+typedef struct {
+    char* content;
+    int size;
+} Clipboard;
+
+Clipboard clipboard = { NULL, 0 };
+
+void FreeList(void);
+
+Node* CreateNode(char value_x)
+{
+    Node* newNode = (Node*)malloc(sizeof(Node));
+    if (newNode == NULL)
+    {
+        printf("Memory allocation error\n");
+        return NULL;
+    }
+    newNode->x = value_x;
+    newNode->next = NULL;
+    return newNode;
+}
+
+void FreeClipboard()
+{
+    if (clipboard.content != NULL)
+    {
+        free(clipboard.content);
+        clipboard.content = NULL;
+        clipboard.size = 0;
+    }
+}
+
+void SaveToClipboard(char* content, int size)
+{
+    FreeClipboard();
+    clipboard.content = (char*)malloc(size + 1);
+    if (clipboard.content != NULL)
+    {
+        memcpy(clipboard.content, content, size);
+        clipboard.content[size] = '\0';
+        clipboard.size = size;
+    }
 }
 
 // ================================ Useful Function ================================
@@ -613,6 +645,155 @@ void DisplayCursorPosition()
 
 // ================================ Task 13 ================================
 
+void Cut(int num_chars)
+{
+    if (num_chars <= 0)
+    {
+        printf("Invalid number of characters to cut\n");
+        return;
+    }
+
+    if (cursor.position == NULL && head != NULL)
+    {
+        printf("Cursor is at invalid position\n");
+        return;
+    }
+
+    if (head == NULL)
+    {
+        printf("Buffer is empty\n");
+        return;
+    }
+
+    if (cursor.position == NULL)
+    {
+        cursor.position = head;
+    }
+
+    char* temp_buffer = (char*)malloc(num_chars + 1);
+    Node* current = cursor.position;
+    int i = 0;
+
+    while (current != NULL && i < num_chars)
+    {
+        temp_buffer[i] = current->x;
+        current = current->next;
+        i++;
+    }
+    temp_buffer[i] = '\0';
+
+    SaveToClipboard(temp_buffer, i);
+    free(temp_buffer);
+
+    printf("Cut %d characters: \"%s\"\n", i, clipboard.content);
+
+    Delete(i);
+}
+
+// ================================ Task 14 ================================
+
+void Copy(int num_chars)
+{
+    if (num_chars <= 0)
+    {
+        printf("Invalid number of characters to copy\n");
+        return;
+    }
+
+    if (cursor.position == NULL && head != NULL)
+    {
+        printf("Cursor is at invalid position\n");
+        return;
+    }
+
+    if (head == NULL)
+    {
+        printf("Buffer is empty\n");
+        return;
+    }
+
+    if (cursor.position == NULL)
+    {
+        cursor.position = head;
+    }
+
+
+    char* temp_buffer = (char*)malloc(num_chars + 1);
+    Node* current = cursor.position;
+    int i = 0;
+
+    while (current != NULL && i < num_chars)
+    {
+        temp_buffer[i] = current->x;
+        current = current->next;
+        i++;
+    }
+    temp_buffer[i] = '\0';
+
+
+    SaveToClipboard(temp_buffer, i);
+    free(temp_buffer);
+
+    printf("Copied %d characters: \"%s\"\n", i, clipboard.content);
+}
+
+// ================================ Task 15 ================================
+
+void Paste()
+{
+    if (clipboard.content == NULL || clipboard.size == 0)
+    {
+        printf("Clipboard is empty\n");
+        return;
+    }
+
+    if (cursor.position == NULL && head != NULL)
+    {
+        printf("Cursor is at invalid position\n");
+        return;
+    }
+
+    Node* prev = NULL;
+
+    if (cursor.position != head && cursor.position != NULL)
+    {
+        prev = head;
+        while (prev != NULL && prev->next != cursor.position)
+        {
+            prev = prev->next;
+        }
+    }
+
+    for (int i = 0; i < clipboard.size; i++)
+    {
+        Node* newNode = CreateNode(clipboard.content[i]);
+
+        if (head == NULL)
+        {
+            head = newNode;
+            prev = newNode;
+            cursor.position = newNode;
+        }
+        else if (prev == NULL)
+        {
+            newNode->next = head;
+            head = newNode;
+            prev = newNode;
+        }
+        else
+        {
+            newNode->next = prev->next;
+            prev->next = newNode;
+            prev = newNode;
+        }
+    }
+
+    SaveStateToUndoStack();
+    printf("Pasted: \"%s\"\n", clipboard.content);
+}
+
+// ================================ Task 16 ================================
+
 void FreeList()
 {
     Node* current = head;
@@ -648,9 +829,13 @@ int main(void)
         "10.Redo command\n"
         "11.Move cursor to position (line, index)\n"
         "12.Display cursor position\n"
-        "13.Clearing the console\n");
+        "13.Cut\n"
+        "14.Copy\n"
+        "15.Paste\n"
+        "16.Clearing the console\n");
     while (true)
     {
+        printf("> ");
         scanf_s("%d", &user_choice);
         while (getchar() != '\n');
 
@@ -720,7 +905,7 @@ int main(void)
         }
 
         case 7:
-
+        {
             printf("Choose word to search:\n");
 
             char* search_input = ReadLine();
@@ -732,6 +917,7 @@ int main(void)
             }
 
             break;
+        }
 
         case 8:
         {
@@ -744,11 +930,11 @@ int main(void)
         }
 
         case 9:
-            Undo();  
+            Undo();
             break;
 
         case 10:
-            Redo(); 
+            Redo();
             break;
 
         case 11:
@@ -766,13 +952,38 @@ int main(void)
             break;
 
         case 13:
+        {
+            int num_chars;
+            printf("How many characters to cut:\n");
+            scanf_s("%d", &num_chars);
+            while (getchar() != '\n');
+            Cut(num_chars);
+            break;
+        }
+
+        case 14:
+        {
+            int num_chars;
+            printf("How many characters to copy:\n");
+            scanf_s("%d", &num_chars);
+            while (getchar() != '\n');
+            Copy(num_chars);
+            break;
+        }
+
+        case 15:
+            Paste();
+            break;
+
+        case 16:
             FreeList();
             FreeStacks();
+            FreeClipboard();
             return 0;
 
         default:
             printf("Wrong command\n");
             break;
         }
-    }       
+    }
 }
