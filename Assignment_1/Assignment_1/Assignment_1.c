@@ -343,43 +343,45 @@ void Print()
 
 // ================================ Task 6 ================================
 
-void InsertLine(char user_text[], int line, int index)
+void Insert(char user_text[])
 {
-    Node* current = head;
+    if (user_text == NULL)
+        return;
+
     Node* prev = NULL;
+    Node* current = cursor.position;
 
-    int currentLine = 0;
-    int currentIndex = 0;
-
-    while (current != NULL && currentLine < line)
+    if (current != head)
     {
-        if (current->x == '\n')
+        prev = head;
+
+        while (prev != NULL && prev->next != current)
         {
-            currentLine++;
+            prev = prev->next;
+        }
+    }
+
+    if (head == NULL)
+    {
+        for (int i = 0; user_text[i] != '\0'; i++)
+        {
+            Node* newNode = CreateNode(user_text[i]);
+
+            if (head == NULL)
+            {
+                head = newNode;
+                prev = newNode;
+            }
+            else
+            {
+                prev->next = newNode;
+                prev = newNode;
+            }
         }
 
-        prev = current;
-        current = current->next;
-    }
-
-    if (currentLine != line)
-    {
-        printf("Line does not exist\n");
-        return;
-    }
-
-    while (current != NULL &&
-        current->x != '\n' &&
-        currentIndex < index)
-    {
-        prev = current;
-        current = current->next;
-        currentIndex++;
-    }
-
-    if (currentIndex != index)
-    {
-        printf("Index out of range\n");
+        cursor.position = NULL;
+        SaveStateToUndoStack();
+        printf("Text inserted successfully\n");
         return;
     }
 
@@ -391,15 +393,18 @@ void InsertLine(char user_text[], int line, int index)
         {
             newNode->next = head;
             head = newNode;
+            prev = newNode;
         }
         else
         {
             newNode->next = current;
             prev->next = newNode;
+            prev = newNode;
         }
-
-        prev = newNode;
     }
+
+    cursor.position = current;
+
     SaveStateToUndoStack();
     printf("Text inserted successfully\n");
 }
@@ -822,7 +827,7 @@ int main(void)
         "3.Use files to save the information\n"
         "4.Use files to load the information\n"
         "5.Print the current text to console\n"
-        "6.Insert the text by line and symsbol index\n"
+        "6.Insert the text by line and symsbol index with insertion\n"
         "7.Search\n"
         "8.Delete command\n"
         "9.Undo command\n"
@@ -887,20 +892,16 @@ int main(void)
 
         case 6:
         {
-            int line, index;
+            printf("Enter text:\n");
 
-            printf("Choose line and index (example: 0 5):\n");
-            scanf_s("%d %d", &line, &index);
-            while (getchar() != '\n');
-
-            printf("Enter text to insert:\n");
             char* user_input = ReadLine();
 
             if (user_input != NULL)
             {
-                InsertLine(user_input, line, index);
+                Insert(user_input);
                 free(user_input);
             }
+
             break;
         }
 
