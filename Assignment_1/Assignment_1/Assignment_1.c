@@ -10,21 +10,28 @@ typedef struct Node
     struct Node* next;
 } Node;
 
+typedef struct {
+    Node* position;    
+    int line;            
+    int index;           
+} Cursor;
+
 Node* head = NULL;
+Cursor cursor = { NULL, 0, 0 };
 
 void FreeList(void);
 
 Node* CreateNode(char value_x)
 {
     Node* newNode = (Node*)malloc(sizeof(Node));
-    if (newNode == NULL) 
+    if (newNode == NULL)
     {
         printf("Memory allocation error\n");
         return NULL;
     }
     newNode->x = value_x;
     newNode->next = NULL;
-    return newNode; 
+    return newNode;
 }
 // ================================ Useful Function ================================
 void AppendNode(Node* newNode)
@@ -313,8 +320,129 @@ void Search(char user_text[])
         printf("Text not found\n");
     }
 }
-    
+
 // ================================ Task 8 ================================
+
+void Delete(int num_chars)
+{
+    if (num_chars <= 0)
+    {
+        printf("Invalid number of characters to delete\n");
+        return;
+    }
+
+    if (cursor.position == NULL && head != NULL)
+    {
+        printf("Cursor is at invalid position\n");
+        return;
+    }
+
+    if (head == NULL)
+    {
+        printf("Buffer is empty\n");
+        return;
+    }
+
+    if (cursor.position == NULL)
+    {
+        cursor.position = head;
+    }
+
+    Node* current = cursor.position;
+    Node* prev = NULL;
+
+    if (cursor.position != head)
+    {
+        Node* temp = head;
+        while (temp != NULL && temp->next != cursor.position)
+        {
+            temp = temp->next;
+        }
+        prev = temp;
+    }
+
+    int deleted = 0;
+    for (int i = 0; i < num_chars && current != NULL; i++)
+    {
+        Node* temp = current;
+        current = current->next;
+        deleted++;
+
+        if (prev == NULL)
+        {
+            head = current;
+        }
+        else
+        {
+            prev->next = current;
+        }
+
+        free(temp);
+    }
+
+    cursor.position = current;
+
+    printf("Deleted %d characters\n", deleted);
+}
+    
+
+// ================================ Task 9 ================================
+
+void MoveCursorToPosition(int line, int index)
+{
+    Node* current = head;
+    int currentLine = 0;
+    int currentIndex = 0;
+
+    while (current != NULL && currentLine < line)
+    {
+        if (current->x == '\n')
+        {
+            currentLine++;
+        }
+        current = current->next;
+    }
+
+    if (currentLine != line)
+    {
+        printf("Line does not exist\n");
+        return;
+    }
+
+    while (current != NULL && currentIndex < index && current->x != '\n')
+    {
+        current = current->next;
+        currentIndex++;
+    }
+
+    if (currentIndex != index)
+    {
+        printf("Index out of range\n");
+        return;
+    }
+
+    cursor.position = current;
+    cursor.line = line;
+    cursor.index = index;
+    printf("Cursor moved to Line %d, Index %d\n", line, index);
+}
+
+// ================================ Task 10 ================================
+
+void DisplayCursorPosition()
+{
+    if (cursor.position == NULL)
+    {
+        printf("Cursor is at the start (or buffer is empty)\n");
+    }
+    else
+    {
+        printf("Cursor at Line %d, Index %d, Character: '%c'\n",
+            cursor.line, cursor.index, cursor.position->x);
+    }
+}
+
+// ================================ Task 11 ================================
 
 void FreeList()
 {
@@ -330,6 +458,7 @@ void FreeList()
     head = NULL;
 }
 
+
 //================================ Main Function ================================
 
 int main(void)
@@ -344,7 +473,10 @@ int main(void)
         "5.Print the current text to console\n"
         "6.Insert the text by line and symsbol index\n"
         "7.Search\n"
-        "8.Clearing the console\n");
+        "8.Delete command\n"
+        "9.Move cursor to position (line, index)\n"
+        "10.Display cursor position\n"
+        "11.Clearing the console\n");
     while (true)
     {
         scanf_s("%d", &user_choice);
@@ -430,6 +562,30 @@ int main(void)
             break;
 
         case 8:
+        {
+            int num_chars;
+            printf("How many characters to delete:\n");
+            scanf_s("%d", &num_chars);
+            while (getchar() != '\n');
+            Delete(num_chars);
+            break;
+        }
+
+        case 9:
+        {
+            int line, index;
+            printf("Enter line and index:\n");
+            scanf_s("%d %d", &line, &index);
+            while (getchar() != '\n');
+            MoveCursorToPosition(line, index);
+            break;
+        }
+
+        case 10:
+            DisplayCursorPosition();
+            break;
+
+        case 11:
             FreeList();
             return 0;
 
