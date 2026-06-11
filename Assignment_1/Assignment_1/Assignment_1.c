@@ -244,6 +244,7 @@ char* ReadLine()
 
 void Append(char user_text[])
 {
+    SaveStateToUndoStack();
     int i = 0;
 
     while (user_text[i] != '\0')
@@ -256,7 +257,6 @@ void Append(char user_text[])
 
         i++;
     }
-    SaveStateToUndoStack();
     printf("Text was appended\n");
     return;
 }
@@ -264,8 +264,9 @@ void Append(char user_text[])
 
 void StartNewLine()
 {
-    AppendNode(CreateNode('\n'));
     SaveStateToUndoStack();
+    AppendNode(CreateNode('\n'));
+    
 }
 
 // ================================ Task 3 ================================ 
@@ -345,6 +346,7 @@ void Print()
 
 void Insert(char user_text[])
 {
+    SaveStateToUndoStack();
     if (user_text == NULL)
         return;
 
@@ -380,7 +382,6 @@ void Insert(char user_text[])
         }
 
         cursor.position = NULL;
-        SaveStateToUndoStack();
         printf("Text inserted successfully\n");
         return;
     }
@@ -405,7 +406,6 @@ void Insert(char user_text[])
 
     cursor.position = current;
 
-    SaveStateToUndoStack();
     printf("Text inserted successfully\n");
 }
 
@@ -473,6 +473,7 @@ void Search(char user_text[])
 
 void Delete(int num_chars)
 {
+    SaveStateToUndoStack();
     if (num_chars <= 0)
     {
         printf("Invalid number of characters to delete\n");
@@ -530,7 +531,6 @@ void Delete(int num_chars)
 
     cursor.position = current;
 
-    SaveStateToUndoStack();
     printf("Deleted %d characters\n", deleted);
 }
 
@@ -746,6 +746,7 @@ void Copy(int num_chars)
 
 void Paste()
 {
+    SaveStateToUndoStack();
     if (clipboard.content == NULL || clipboard.size == 0)
     {
         printf("Clipboard is empty\n");
@@ -793,7 +794,6 @@ void Paste()
         }
     }
 
-    SaveStateToUndoStack();
     printf("Pasted: \"%s\"\n", clipboard.content);
 }
 
@@ -898,6 +898,7 @@ int main(void)
 
             if (user_input != NULL)
             {
+                Delete(strlen(user_input));
                 Insert(user_input);
                 free(user_input);
             }
