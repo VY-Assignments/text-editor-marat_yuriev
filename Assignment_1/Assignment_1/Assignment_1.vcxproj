@@ -115,6 +115,8 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>
+      </AdditionalLibraryDirectories>
     </Link>
     <Manifest>
       <EnableSegmentHeap>true</EnableSegmentHeap>
@@ -139,7 +141,23 @@
     </Manifest>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Assignment_1.c" />
+    <ClCompile Include="checkList.cpp" />
+    <ClCompile Include="cipherLoader.cpp" />
+    <ClCompile Include="contactLine.cpp" />
+    <ClCompile Include="line.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="text.cpp" />
+    <ClCompile Include="textEditor.cpp" />
+    <ClCompile Include="textLine.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="checkList.h" />
+    <ClInclude Include="cipherLoader.h" />
+    <ClInclude Include="contactLine.h" />
+    <ClInclude Include="line.h" />
+    <ClInclude Include="text.h" />
+    <ClInclude Include="textEditor.h" />
+    <ClInclude Include="textLine.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
