@@ -16,7 +16,7 @@ public:
 
     const std::string& GetText() const { return text; }
 
-    void InsertChar(int index, char c);
+    void AppendText(const std::string& more);
     void DeleteChars(int index, int count);
     int Length() const { return static_cast<int>(text.size()); }
 };

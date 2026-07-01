@@ -40,7 +40,19 @@ std::unique_ptr<Line> Line::Deserialize(const std::string& raw)
 
     if (tag == "TEXT")
     {
-        return std::make_unique<TextLine>(rest);
+        std::string unescaped;
+        unescaped.reserve(rest.size());
+        for (size_t i = 0; i < rest.size(); ++i)
+        {
+            if (rest[i] == '\\' && i + 1 < rest.size())
+            {
+                char next = rest[i + 1];
+                if (next == 'n') { unescaped += '\n'; ++i; continue; }
+                if (next == '\\') { unescaped += '\\'; ++i; continue; }
+            }
+            unescaped += rest[i];
+        }
+        return std::make_unique<TextLine>(unescaped);
     }
     if (tag == "CHECK")
     {

@@ -4,17 +4,10 @@
 #include <string>
 #include "line.h"
 
-struct Cursor
-{
-    int row = 0;
-    int col = 0;
-};
-
 class Text
 {
 private:
     std::vector<std::unique_ptr<Line>> rows;
-    Cursor cursor;
 
     std::vector<std::vector<std::unique_ptr<Line>>> undoStack;
     std::vector<std::vector<std::unique_ptr<Line>>> redoStack;
@@ -23,27 +16,24 @@ private:
 
     std::vector<std::unique_ptr<Line>> CloneRows(const std::vector<std::unique_ptr<Line>>& source) const;
     void SaveStateForUndo();
-    void ClampCursor();
 
 public:
     Text() = default;
 
-    void AppendTextLine(const std::string& text);
+    void AppendText(const std::string& text);
     void StartNewLine();
+
     void AddChecklistItem(const std::string& item, bool checked = false);
     void AddContact(const std::string& name, const std::string& surname, const std::string& email);
 
-    void InsertCharAtCursor(char c);
-    void DeleteAtCursor(int count);
-    void ToggleChecklistAtCursor();
+    void DeleteLastChars(int count);
 
-    void CutRows(int count);
-    void CopyRows(int count);
-    void PasteRows();
+    void ToggleChecklistItem(int rowIndex);
+    void DeleteRow(int rowIndex);
 
-    bool MoveCursor(int row, int col);
-    Cursor GetCursor() const { return cursor; }
-    void DisplayCursor() const;
+    void CutRows(int startRow, int count);
+    void CopyRows(int startRow, int count);
+    void PasteRows(int insertAtRow);
 
     void Undo();
     void Redo();

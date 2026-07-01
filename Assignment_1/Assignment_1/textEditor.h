@@ -11,6 +11,9 @@ private:
 
     std::string defaultLibraryPath;
 
+    std::string encryptedBuffer;
+    bool hasEncryptedBuffer = false;
+
     void PrintMenu() const;
 
     void CommandAppendText();
@@ -18,9 +21,8 @@ private:
     void CommandAddChecklistItem();
     void CommandAddContact();
     void CommandToggleChecklist();
-    void CommandInsertText();
-    void CommandDeleteChars();
-    void CommandMoveCursor();
+    void CommandDeleteLastChars();
+    void CommandDeleteRow();
     void CommandSearch();
     void CommandCut();
     void CommandCopy();
@@ -28,9 +30,10 @@ private:
     void CommandSaveToFile();
     void CommandLoadFromFile();
 
-    void CommandEncryptCurrentTextToFile();
-    void CommandLoadAndDecryptFile();
-    void CommandEncryptOrDecryptArbitraryFile();
+    void CommandEncryptDocument();
+    void CommandSaveEncryptedToFile();
+    void CommandLoadEncryptedFromFile();
+    void CommandDecryptDocument();
 
     CipherHandle PromptForCipher() const;
 

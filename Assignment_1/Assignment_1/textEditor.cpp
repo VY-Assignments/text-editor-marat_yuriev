@@ -3,7 +3,6 @@
 #include <fstream>
 #include <limits>
 
-
 namespace
 {
     std::string ReadLine()
@@ -56,35 +55,35 @@ void TextEditor::PrintMenu() const
 {
     std::cout <<
         "\n--- Text Editor ---\n"
-        " 1. Append text row\n"
+        " 1. Append text (continues current text block)\n"
         " 2. Start new (blank) line\n"
         " 3. Add checklist item\n"
         " 4. Add contact\n"
-        " 5. Toggle checklist item at cursor\n"
-        " 6. Insert text at cursor (text rows only)\n"
-        " 7. Delete characters at cursor (text rows only)\n"
-        " 8. Move cursor (row, col)\n"
-        " 9. Display cursor position\n"
-        "10. Search\n"
-        "11. Cut row(s)\n"
-        "12. Copy row(s)\n"
-        "13. Paste row(s)\n"
-        "14. Undo\n"
-        "15. Redo\n"
-        "16. Print document\n"
-        "17. Save document to plain file\n"
-        "18. Load document from plain file\n"
-        "19. Encrypt current document and save to file\n"
-        "20. Load an encrypted file into the document (decrypt)\n"
-        "21. Encrypt/decrypt an arbitrary text file\n"
+        " 5. Toggle checklist item (by row number)\n"
+        " 6. Delete last N characters from current text\n"
+        " 7. Delete a row (by row number)\n"
+        " 8. Search\n"
+        " 9. Cut rows (by start row + count)\n"
+        "10. Copy rows (by start row + count)\n"
+        "11. Paste rows (at a row, or at the end)\n"
+        "12. Undo\n"
+        "13. Redo\n"
+        "14. Print document\n"
+        "15. Save document to plain file\n"
+        "16. Load document from plain file\n"
+        "17. Encrypt document (choose cipher + key)\n"
+        "18. Save encrypted data to file\n"
+        "19. Load encrypted file\n"
+        "20. Decrypt loaded data\n"
         " 0. Exit\n"
-        "> ";
+        "\n(Use Print to see row numbers - top to bottom, starting at 0 - "
+        "before Toggle/Delete row/Cut/Copy/Paste.)\n";
 }
 
 void TextEditor::CommandAppendText()
 {
     std::cout << "Enter text: ";
-    document.AppendTextLine(ReadLine());
+    document.AppendText(ReadLine());
 }
 
 void TextEditor::CommandStartNewLine()
@@ -114,30 +113,20 @@ void TextEditor::CommandAddContact()
 
 void TextEditor::CommandToggleChecklist()
 {
-    document.ToggleChecklistAtCursor();
+    std::cout << "Row number to toggle: ";
+    document.ToggleChecklistItem(ReadInt());
 }
 
-void TextEditor::CommandInsertText()
+void TextEditor::CommandDeleteLastChars()
 {
-    std::cout << "Enter text to insert at cursor: ";
-    std::string text = ReadLine();
-    for (char c : text)
-        document.InsertCharAtCursor(c);
+    std::cout << "How many characters to delete from the end: ";
+    document.DeleteLastChars(ReadInt());
 }
 
-void TextEditor::CommandDeleteChars()
+void TextEditor::CommandDeleteRow()
 {
-    std::cout << "How many characters to delete: ";
-    int count = ReadInt();
-    document.DeleteAtCursor(count);
-}
-
-void TextEditor::CommandMoveCursor()
-{
-    std::cout << "Enter row and column: ";
-    int row = ReadInt();
-    int col = ReadInt();
-    document.MoveCursor(row, col);
+    std::cout << "Row number to delete: ";
+    document.DeleteRow(ReadInt());
 }
 
 void TextEditor::CommandSearch()
@@ -148,19 +137,26 @@ void TextEditor::CommandSearch()
 
 void TextEditor::CommandCut()
 {
+    std::cout << "Start row: ";
+    int startRow = ReadInt();
     std::cout << "How many rows to cut: ";
-    document.CutRows(ReadInt());
+    int count = ReadInt();
+    document.CutRows(startRow, count);
 }
 
 void TextEditor::CommandCopy()
 {
+    std::cout << "Start row: ";
+    int startRow = ReadInt();
     std::cout << "How many rows to copy: ";
-    document.CopyRows(ReadInt());
+    int count = ReadInt();
+    document.CopyRows(startRow, count);
 }
 
 void TextEditor::CommandPaste()
 {
-    document.PasteRows();
+    std::cout << "Insert at row (any out-of-range number = paste at the end): ";
+    document.PasteRows(ReadInt());
 }
 
 void TextEditor::CommandSaveToFile()
@@ -194,31 +190,26 @@ void TextEditor::CommandLoadFromFile()
 
 CipherHandle TextEditor::PromptForCipher() const
 {
-    std::cout << "Choose algorithm (1 = Caesar, 2 = Vigenere, 3 = Playfair): ";
+    std::cout << "Choose cipher (1 = Caesar, 2 = Vigenere, 3 = Playfair): ";
     int choice = ReadInt();
-
-    std::cout << "Path to cipher library [" << defaultLibraryPath << "]: ";
-    std::string path = ReadLine();
-    if (path.empty())
-        path = defaultLibraryPath;
 
     if (choice == 1)
     {
         std::cout << "Enter shift key (integer): ";
         int shiftKey = ReadInt();
-        return CipherHandle::ForCaesar(path, shiftKey);
+        return CipherHandle::ForCaesar(defaultLibraryPath, shiftKey);
     }
 
     std::cout << "Enter keyword (letters only): ";
     std::string keyword = ReadLine();
 
     if (choice == 3)
-        return CipherHandle::ForPlayfair(path, keyword);
+        return CipherHandle::ForPlayfair(defaultLibraryPath, keyword);
 
-    return CipherHandle::ForVigenere(path, keyword);
+    return CipherHandle::ForVigenere(defaultLibraryPath, keyword);
 }
 
-void TextEditor::CommandEncryptCurrentTextToFile()
+void TextEditor::CommandEncryptDocument()
 {
     try
     {
@@ -229,18 +220,15 @@ void TextEditor::CommandEncryptCurrentTextToFile()
             std::cout << "Warning: Playfair strips punctuation/digits and "
                 "uppercases everything, which will corrupt this "
                 "document's row structure (TEXT|... / CHECK|... / "
-                "CONTACT|...) and make it impossible to load back "
+                "CONTACT|...) and make it impossible to decrypt back "
                 "correctly. Caesar or Vigenere are recommended for "
                 "encrypting the whole document instead.\n";
         }
 
-        std::string encrypted = cipher.Encrypt(document.ToPlainString());
+        encryptedBuffer = cipher.Encrypt(document.ToPlainString());
+        hasEncryptedBuffer = true;
 
-        std::cout << "Enter output file name: ";
-        std::string path = ReadLine();
-        WriteFileText(path, encrypted);
-
-        std::cout << "Document encrypted and saved successfully\n";
+        std::cout << "Document encrypted. Use 'Save encrypted data to file' to write it to disk.\n";
     }
     catch (const std::exception& e)
     {
@@ -248,16 +236,57 @@ void TextEditor::CommandEncryptCurrentTextToFile()
     }
 }
 
-void TextEditor::CommandLoadAndDecryptFile()
+void TextEditor::CommandSaveEncryptedToFile()
 {
+    if (!hasEncryptedBuffer)
+    {
+        std::cout << "Nothing encrypted yet - use 'Encrypt document' first\n";
+        return;
+    }
+
+    std::cout << "Enter output file name: ";
+    std::string path = ReadLine();
+
     try
     {
-        std::cout << "Enter encrypted file name to load: ";
-        std::string path = ReadLine();
-        std::string encrypted = ReadFileText(path);
+        WriteFileText(path, encryptedBuffer);
+        std::cout << "Encrypted data saved successfully\n";
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Error: " << e.what() << "\n";
+    }
+}
 
+void TextEditor::CommandLoadEncryptedFromFile()
+{
+    std::cout << "Enter encrypted file name to load: ";
+    std::string path = ReadLine();
+
+    try
+    {
+        encryptedBuffer = ReadFileText(path);
+        hasEncryptedBuffer = true;
+        std::cout << "Encrypted data loaded. Use 'Decrypt loaded data' to turn it back into text.\n";
+    }
+    catch (const std::exception& e)
+    {
+        std::cout << "Error: " << e.what() << "\n";
+    }
+}
+
+void TextEditor::CommandDecryptDocument()
+{
+    if (!hasEncryptedBuffer)
+    {
+        std::cout << "No encrypted data available - encrypt or load some first\n";
+        return;
+    }
+
+    try
+    {
         CipherHandle cipher = PromptForCipher();
-        std::string plain = cipher.Decrypt(encrypted);
+        std::string plain = cipher.Decrypt(encryptedBuffer);
 
         document.LoadFromPlainString(plain);
         std::cout << "Document decrypted and loaded successfully\n";
@@ -268,37 +297,14 @@ void TextEditor::CommandLoadAndDecryptFile()
     }
 }
 
-void TextEditor::CommandEncryptOrDecryptArbitraryFile()
-{
-    try
-    {
-        std::cout << "1. Encrypt  2. Decrypt\nChoice: ";
-        int mode = ReadInt();
-
-        std::cout << "Input file path: ";
-        std::string inputPath = ReadLine();
-        std::cout << "Output file path: ";
-        std::string outputPath = ReadLine();
-
-        CipherHandle cipher = PromptForCipher();
-        std::string input = ReadFileText(inputPath);
-        std::string output = (mode == 1) ? cipher.Encrypt(input) : cipher.Decrypt(input);
-
-        WriteFileText(outputPath, output);
-        std::cout << (mode == 1 ? "File encrypted successfully\n" : "File decrypted successfully\n");
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << "Error: " << e.what() << "\n";
-    }
-}
-
 void TextEditor::Run()
 {
+    PrintMenu();
+
     bool running = true;
     while (running)
     {
-        PrintMenu();
+        std::cout << "\n> ";
         int choice = ReadInt();
 
         switch (choice)
@@ -308,22 +314,21 @@ void TextEditor::Run()
         case 3:  CommandAddChecklistItem(); break;
         case 4:  CommandAddContact(); break;
         case 5:  CommandToggleChecklist(); break;
-        case 6:  CommandInsertText(); break;
-        case 7:  CommandDeleteChars(); break;
-        case 8:  CommandMoveCursor(); break;
-        case 9:  document.DisplayCursor(); break;
-        case 10: CommandSearch(); break;
-        case 11: CommandCut(); break;
-        case 12: CommandCopy(); break;
-        case 13: CommandPaste(); break;
-        case 14: document.Undo(); break;
-        case 15: document.Redo(); break;
-        case 16: document.Print(); break;
-        case 17: CommandSaveToFile(); break;
-        case 18: CommandLoadFromFile(); break;
-        case 19: CommandEncryptCurrentTextToFile(); break;
-        case 20: CommandLoadAndDecryptFile(); break;
-        case 21: CommandEncryptOrDecryptArbitraryFile(); break;
+        case 6:  CommandDeleteLastChars(); break;
+        case 7:  CommandDeleteRow(); break;
+        case 8:  CommandSearch(); break;
+        case 9:  CommandCut(); break;
+        case 10: CommandCopy(); break;
+        case 11: CommandPaste(); break;
+        case 12: document.Undo(); break;
+        case 13: document.Redo(); break;
+        case 14: document.Print(); break;
+        case 15: CommandSaveToFile(); break;
+        case 16: CommandLoadFromFile(); break;
+        case 17: CommandEncryptDocument(); break;
+        case 18: CommandSaveEncryptedToFile(); break;
+        case 19: CommandLoadEncryptedFromFile(); break;
+        case 20: CommandDecryptDocument(); break;
         case 0:  running = false; break;
         default: std::cout << "Wrong command\n"; break;
         }

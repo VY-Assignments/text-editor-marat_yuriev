@@ -24,44 +24,35 @@ void Text::SaveStateForUndo()
     redoStack.clear();
 }
 
-void Text::ClampCursor()
+void Text::AppendText(const std::string& textToAdd)
 {
-    if (rows.empty())
-    {
-        cursor = { 0, 0 };
-        return;
-    }
-    if (cursor.row >= static_cast<int>(rows.size()))
-        cursor.row = static_cast<int>(rows.size()) - 1;
-    if (cursor.row < 0)
-        cursor.row = 0;
+    SaveStateForUndo();
 
-    if (rows[cursor.row]->GetType() != LineType::Text)
+    if (!rows.empty() && rows.back()->GetType() == LineType::Text)
     {
-        cursor.col = 0; 
+        static_cast<TextLine*>(rows.back().get())->AppendText(textToAdd);
     }
     else
     {
-        int len = static_cast<TextLine*>(rows[cursor.row].get())->Length();
-        cursor.col = std::min(std::max(cursor.col, 0), len);
+        rows.push_back(std::make_unique<TextLine>(textToAdd));
     }
-}
 
-void Text::AppendTextLine(const std::string& text)
-{
-    SaveStateForUndo();
-    rows.push_back(std::make_unique<TextLine>(text));
-    cursor.row = static_cast<int>(rows.size()) - 1;
-    cursor.col = static_cast<TextLine*>(rows[cursor.row].get())->Length();
-    std::cout << "Text row added\n";
+    std::cout << "Text appended\n";
 }
 
 void Text::StartNewLine()
 {
     SaveStateForUndo();
-    rows.push_back(std::make_unique<TextLine>(""));
-    cursor.row = static_cast<int>(rows.size()) - 1;
-    cursor.col = 0;
+
+    if (!rows.empty() && rows.back()->GetType() == LineType::Text)
+    {
+        static_cast<TextLine*>(rows.back().get())->AppendText("\n");
+    }
+    else
+    {
+        rows.push_back(std::make_unique<TextLine>(""));
+    }
+
     std::cout << "New line started\n";
 }
 
@@ -69,8 +60,6 @@ void Text::AddChecklistItem(const std::string& item, bool checked)
 {
     SaveStateForUndo();
     rows.push_back(std::make_unique<ChecklistLine>(item, checked));
-    cursor.row = static_cast<int>(rows.size()) - 1;
-    cursor.col = 0;
     std::cout << "Checklist item added\n";
 }
 
@@ -78,41 +67,14 @@ void Text::AddContact(const std::string& name, const std::string& surname, const
 {
     SaveStateForUndo();
     rows.push_back(std::make_unique<ContactLine>(name, surname, email));
-    cursor.row = static_cast<int>(rows.size()) - 1;
-    cursor.col = 0;
     std::cout << "Contact added\n";
 }
 
-void Text::InsertCharAtCursor(char c)
+void Text::DeleteLastChars(int count)
 {
-    if (rows.empty())
+    if (rows.empty() || rows.back()->GetType() != LineType::Text)
     {
-        AppendTextLine("");
-    }
-
-    if (rows[cursor.row]->GetType() != LineType::Text)
-    {
-        std::cout << "Cursor is on a non-text row; cannot insert characters here\n";
-        return;
-    }
-
-    SaveStateForUndo();
-    auto* line = static_cast<TextLine*>(rows[cursor.row].get());
-    line->InsertChar(cursor.col, c);
-    cursor.col++;
-    std::cout << "Character inserted\n";
-}
-
-void Text::DeleteAtCursor(int count)
-{
-    if (rows.empty())
-    {
-        std::cout << "Buffer is empty\n";
-        return;
-    }
-    if (rows[cursor.row]->GetType() != LineType::Text)
-    {
-        std::cout << "Cursor is on a non-text row; cannot delete characters here\n";
+        std::cout << "Last row is not text; nothing to delete\n";
         return;
     }
     if (count <= 0)
@@ -122,63 +84,90 @@ void Text::DeleteAtCursor(int count)
     }
 
     SaveStateForUndo();
-    auto* line = static_cast<TextLine*>(rows[cursor.row].get());
-    int available = line->Length() - cursor.col;
-    int toDelete = std::min(count, available);
-    line->DeleteChars(cursor.col, toDelete);
+    auto* line = static_cast<TextLine*>(rows.back().get());
+    int len = line->Length();
+    int toDelete = std::min(count, len);
+    line->DeleteChars(len - toDelete, toDelete);
     std::cout << "Deleted " << toDelete << " character(s)\n";
 }
 
-void Text::ToggleChecklistAtCursor()
+void Text::ToggleChecklistItem(int rowIndex)
 {
-    if (rows.empty() || rows[cursor.row]->GetType() != LineType::Checklist)
+    if (rowIndex < 0 || rowIndex >= static_cast<int>(rows.size()))
     {
-        std::cout << "Cursor is not on a checklist row\n";
+        std::cout << "Row does not exist\n";
+        return;
+    }
+    if (rows[rowIndex]->GetType() != LineType::Checklist)
+    {
+        std::cout << "Row " << rowIndex << " is not a checklist item\n";
         return;
     }
 
     SaveStateForUndo();
-    static_cast<ChecklistLine*>(rows[cursor.row].get())->Toggle();
+    static_cast<ChecklistLine*>(rows[rowIndex].get())->Toggle();
     std::cout << "Checklist item toggled\n";
 }
 
-void Text::CutRows(int count)
+void Text::DeleteRow(int rowIndex)
 {
-    if (rows.empty() || count <= 0)
+    if (rowIndex < 0 || rowIndex >= static_cast<int>(rows.size()))
+    {
+        std::cout << "Row does not exist\n";
+        return;
+    }
+
+    SaveStateForUndo();
+    rows.erase(rows.begin() + rowIndex);
+    std::cout << "Row " << rowIndex << " deleted\n";
+}
+
+void Text::CutRows(int startRow, int count)
+{
+    if (rows.empty())
     {
         std::cout << "Nothing to cut\n";
         return;
     }
+    if (startRow < 0 || startRow >= static_cast<int>(rows.size()) || count <= 0)
+    {
+        std::cout << "Invalid row range\n";
+        return;
+    }
 
     SaveStateForUndo();
-    int end = std::min(cursor.row + count, static_cast<int>(rows.size()));
+    int end = std::min(startRow + count, static_cast<int>(rows.size()));
 
     clipboard.clear();
-    for (int i = cursor.row; i < end; i++)
+    for (int i = startRow; i < end; i++)
         clipboard.push_back(rows[i]->Clone());
 
-    rows.erase(rows.begin() + cursor.row, rows.begin() + end);
-    ClampCursor();
+    rows.erase(rows.begin() + startRow, rows.begin() + end);
     std::cout << "Cut " << clipboard.size() << " row(s)\n";
 }
 
-void Text::CopyRows(int count)
+void Text::CopyRows(int startRow, int count)
 {
-    if (rows.empty() || count <= 0)
+    if (rows.empty())
     {
         std::cout << "Nothing to copy\n";
         return;
     }
+    if (startRow < 0 || startRow >= static_cast<int>(rows.size()) || count <= 0)
+    {
+        std::cout << "Invalid row range\n";
+        return;
+    }
 
-    int end = std::min(cursor.row + count, static_cast<int>(rows.size()));
+    int end = std::min(startRow + count, static_cast<int>(rows.size()));
     clipboard.clear();
-    for (int i = cursor.row; i < end; i++)
+    for (int i = startRow; i < end; i++)
         clipboard.push_back(rows[i]->Clone());
 
     std::cout << "Copied " << clipboard.size() << " row(s)\n";
 }
 
-void Text::PasteRows()
+void Text::PasteRows(int insertAtRow)
 {
     if (clipboard.empty())
     {
@@ -186,52 +175,15 @@ void Text::PasteRows()
         return;
     }
 
-    SaveStateForUndo();
-    int insertAt = rows.empty() ? 0 : cursor.row;
+    int insertAt = insertAtRow;
+    if (insertAt < 0 || insertAt > static_cast<int>(rows.size()))
+        insertAt = static_cast<int>(rows.size()); // out of range -> append at the end
 
+    SaveStateForUndo();
     for (size_t i = 0; i < clipboard.size(); i++)
         rows.insert(rows.begin() + insertAt + i, clipboard[i]->Clone());
 
     std::cout << "Pasted " << clipboard.size() << " row(s)\n";
-}
-
-bool Text::MoveCursor(int row, int col)
-{
-    if (row < 0 || row >= static_cast<int>(rows.size()))
-    {
-        std::cout << "Row does not exist\n";
-        return false;
-    }
-
-    cursor.row = row;
-    if (rows[row]->GetType() == LineType::Text)
-    {
-        int len = static_cast<TextLine*>(rows[row].get())->Length();
-        if (col < 0 || col > len)
-        {
-            std::cout << "Column out of range\n";
-            cursor.col = 0;
-            return false;
-        }
-        cursor.col = col;
-    }
-    else
-    {
-        cursor.col = 0;
-    }
-
-    std::cout << "Cursor moved to Row " << row << ", Col " << cursor.col << "\n";
-    return true;
-}
-
-void Text::DisplayCursor() const
-{
-    if (rows.empty())
-    {
-        std::cout << "Cursor is at the start (buffer is empty)\n";
-        return;
-    }
-    std::cout << "Cursor at Row " << cursor.row << ", Col " << cursor.col << "\n";
 }
 
 void Text::Undo()
@@ -245,7 +197,6 @@ void Text::Undo()
     redoStack.push_back(CloneRows(rows));
     rows = std::move(undoStack.back());
     undoStack.pop_back();
-    ClampCursor();
     std::cout << "Undo executed\n";
 }
 
@@ -260,7 +211,6 @@ void Text::Redo()
     undoStack.push_back(CloneRows(rows));
     rows = std::move(redoStack.back());
     redoStack.pop_back();
-    ClampCursor();
     std::cout << "Redo executed\n";
 }
 
@@ -296,7 +246,6 @@ void Text::Clear()
     undoStack.clear();
     redoStack.clear();
     clipboard.clear();
-    cursor = { 0, 0 };
 }
 
 std::string Text::ToPlainString() const
@@ -323,6 +272,4 @@ void Text::LoadFromPlainString(const std::string& data)
             continue;
         rows.push_back(Line::Deserialize(line));
     }
-
-    cursor = { 0, 0 };
 }

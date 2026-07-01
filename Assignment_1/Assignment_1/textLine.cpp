@@ -14,7 +14,16 @@ void TextLine::Print() const
 
 std::string TextLine::Serialize() const
 {
-    return "TEXT|" + text;
+
+    std::string escaped;
+    escaped.reserve(text.size());
+    for (char c : text)
+    {
+        if (c == '\n')      escaped += "\\n";
+        else if (c == '\\') escaped += "\\\\";
+        else                escaped += c;
+    }
+    return "TEXT|" + escaped;
 }
 
 std::unique_ptr<Line> TextLine::Clone() const
@@ -22,11 +31,9 @@ std::unique_ptr<Line> TextLine::Clone() const
     return std::make_unique<TextLine>(text);
 }
 
-void TextLine::InsertChar(int index, char c)
+void TextLine::AppendText(const std::string& more)
 {
-    if (index < 0) index = 0;
-    if (index > static_cast<int>(text.size())) index = static_cast<int>(text.size());
-    text.insert(text.begin() + index, c);
+    text += more;
 }
 
 void TextLine::DeleteChars(int index, int count)
