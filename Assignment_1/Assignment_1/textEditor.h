@@ -33,6 +33,7 @@ private:
     void CommandEncryptDocument();
     void CommandSaveEncryptedToFile();
     void CommandLoadEncryptedFromFile();
+    void CommandPrintEncrypted();
     void CommandDecryptDocument();
 
     CipherHandle PromptForCipher() const;

@@ -75,9 +75,8 @@ void TextEditor::PrintMenu() const
         "18. Save encrypted data to file\n"
         "19. Load encrypted file\n"
         "20. Decrypt loaded data\n"
-        " 0. Exit\n"
-        "\n(Use Print to see row numbers - top to bottom, starting at 0 - "
-        "before Toggle/Delete row/Cut/Copy/Paste.)\n";
+        "21. Print encrypted data (raw ciphertext, no decryption)\n"
+        " 0. Exit\n";
 }
 
 void TextEditor::CommandAppendText()
@@ -227,8 +226,12 @@ void TextEditor::CommandEncryptDocument()
 
         encryptedBuffer = cipher.Encrypt(document.ToPlainString());
         hasEncryptedBuffer = true;
+        document.Clear();
 
-        std::cout << "Document encrypted. Use 'Save encrypted data to file' to write it to disk.\n";
+        std::cout << "Document encrypted and cleared from memory - Print will show "
+            "an empty buffer now. Use 'Save encrypted data to file' to write "
+            "the ciphertext to disk, and 'Decrypt loaded data' to get the "
+            "plain text back.\n";
     }
     catch (const std::exception& e)
     {
@@ -275,6 +278,17 @@ void TextEditor::CommandLoadEncryptedFromFile()
     }
 }
 
+void TextEditor::CommandPrintEncrypted()
+{
+    if (!hasEncryptedBuffer)
+    {
+        std::cout << "No encrypted data available - encrypt or load some first\n";
+        return;
+    }
+
+    std::cout << encryptedBuffer << "\n";
+}
+
 void TextEditor::CommandDecryptDocument()
 {
     if (!hasEncryptedBuffer)
@@ -282,6 +296,9 @@ void TextEditor::CommandDecryptDocument()
         std::cout << "No encrypted data available - encrypt or load some first\n";
         return;
     }
+
+    std::cout << "Reminder: use the SAME cipher and SAME key you encrypted with "
+        "(e.g. shift 3, not -3, for Caesar).\n";
 
     try
     {
@@ -329,6 +346,7 @@ void TextEditor::Run()
         case 18: CommandSaveEncryptedToFile(); break;
         case 19: CommandLoadEncryptedFromFile(); break;
         case 20: CommandDecryptDocument(); break;
+        case 21: CommandPrintEncrypted(); break;
         case 0:  running = false; break;
         default: std::cout << "Wrong command\n"; break;
         }
