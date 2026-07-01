@@ -189,7 +189,7 @@ void TextEditor::CommandLoadFromFile()
 
 CipherHandle TextEditor::PromptForCipher() const
 {
-    std::cout << "Choose cipher (1 = Caesar, 2 = Vigenere, 3 = Playfair): ";
+    std::cout << "Choose cipher (1 = Caesar, 2 = Vigenere): ";
     int choice = ReadInt();
 
     if (choice == 1)
@@ -202,9 +202,6 @@ CipherHandle TextEditor::PromptForCipher() const
     std::cout << "Enter keyword (letters only): ";
     std::string keyword = ReadLine();
 
-    if (choice == 3)
-        return CipherHandle::ForPlayfair(defaultLibraryPath, keyword);
-
     return CipherHandle::ForVigenere(defaultLibraryPath, keyword);
 }
 
@@ -214,31 +211,17 @@ void TextEditor::CommandEncryptDocument()
     {
         CipherHandle cipher = PromptForCipher();
 
-        if (cipher.GetType() == CipherHandle::Type::Playfair)
-        {
-            std::cout << "Warning: Playfair strips punctuation/digits and "
-                "uppercases everything, which will corrupt this "
-                "document's row structure (TEXT|... / CHECK|... / "
-                "CONTACT|...) and make it impossible to decrypt back "
-                "correctly. Caesar or Vigenere are recommended for "
-                "encrypting the whole document instead.\n";
-        }
-
         encryptedBuffer = cipher.Encrypt(document.ToPlainString());
         hasEncryptedBuffer = true;
         document.Clear();
 
-        std::cout << "Document encrypted and cleared from memory - Print will show "
-            "an empty buffer now. Use 'Save encrypted data to file' to write "
-            "the ciphertext to disk, and 'Decrypt loaded data' to get the "
-            "plain text back.\n";
+        std::cout << "Document encrypted and cleared from memory\n";
     }
     catch (const std::exception& e)
     {
         std::cout << "Error: " << e.what() << "\n";
     }
 }
-
 void TextEditor::CommandSaveEncryptedToFile()
 {
     if (!hasEncryptedBuffer)
@@ -270,7 +253,7 @@ void TextEditor::CommandLoadEncryptedFromFile()
     {
         encryptedBuffer = ReadFileText(path);
         hasEncryptedBuffer = true;
-        std::cout << "Encrypted data loaded. Use 'Decrypt loaded data' to turn it back into text.\n";
+        std::cout << "Encrypted data loaded.\n";
     }
     catch (const std::exception& e)
     {
@@ -296,9 +279,6 @@ void TextEditor::CommandDecryptDocument()
         std::cout << "No encrypted data available - encrypt or load some first\n";
         return;
     }
-
-    std::cout << "Reminder: use the SAME cipher and SAME key you encrypted with "
-        "(e.g. shift 3, not -3, for Caesar).\n";
 
     try
     {

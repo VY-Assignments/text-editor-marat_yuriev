@@ -4,11 +4,10 @@
 class CipherHandle
 {
 public:
-    enum class Type { Caesar, Vigenere, Playfair };
+    enum class Type { Caesar, Vigenere };
 
     static CipherHandle ForCaesar(const std::string& libraryPath, int key);
     static CipherHandle ForVigenere(const std::string& libraryPath, const std::string& key);
-    static CipherHandle ForPlayfair(const std::string& libraryPath, const std::string& key);
 
     Type GetType() const { return type; }
 

@@ -14,7 +14,6 @@ extern "C" {
 
     EXPORT cipher_t* cipher_create_caesar(int key);
     EXPORT cipher_t* cipher_create_vigenere(const char* key);
-    EXPORT cipher_t* cipher_create_playfair(const char* key);
     EXPORT char* cipher_encrypt(cipher_t* cipher, const char* text);
     EXPORT char* cipher_decrypt(cipher_t* cipher, const char* text);
     EXPORT void cipher_destroy(cipher_t* cipher);

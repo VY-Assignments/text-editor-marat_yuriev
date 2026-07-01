@@ -28,14 +28,3 @@ public:
     std::string decrypt(const std::string& text) override;
 };
 
-class PlayfairCipher : public Cipher {
-private:
-    char square_[5][5];
-    void buildSquare(const std::string& key);
-    void findPos(char c, int& r, int& cnd) const;
-    static char normalize(char c);
-public:
-    PlayfairCipher(const std::string& key);
-    std::string encrypt(const std::string& text) override;
-    std::string decrypt(const std::string& text) override;
-};

@@ -12,7 +12,6 @@ namespace
 
     using CreateCaesarFn = void* (*)(int);
     using CreateVigenereFn = void* (*)(const char*);
-    using CreatePlayfairFn = void* (*)(const char*);
     using EncryptFn = char* (*)(void*, const char*);
     using DecryptFn = char* (*)(void*, const char*);
     using DestroyFn = void  (*)(void*);
@@ -69,11 +68,6 @@ CipherHandle CipherHandle::ForVigenere(const std::string& libraryPath, const std
     return CipherHandle(libraryPath, Type::Vigenere, 0, key);
 }
 
-CipherHandle CipherHandle::ForPlayfair(const std::string& libraryPath, const std::string& key)
-{
-    return CipherHandle(libraryPath, Type::Playfair, 0, key);
-}
-
 std::string CipherHandle::RunOperation(const std::string& text, bool encrypt) const
 {
 #ifdef _WIN32
@@ -99,13 +93,12 @@ std::string CipherHandle::RunOperation(const std::string& text, bool encrypt) co
 
     auto createCaesar = reinterpret_cast<CreateCaesarFn>(GetProcAddress(handle, "cipher_create_caesar"));
     auto createVigenere = reinterpret_cast<CreateVigenereFn>(GetProcAddress(handle, "cipher_create_vigenere"));
-    auto createPlayfair = reinterpret_cast<CreatePlayfairFn>(GetProcAddress(handle, "cipher_create_playfair"));
     auto encryptFn = reinterpret_cast<EncryptFn>(GetProcAddress(handle, "cipher_encrypt"));
     auto decryptFn = reinterpret_cast<DecryptFn>(GetProcAddress(handle, "cipher_decrypt"));
     auto destroyFn = reinterpret_cast<DestroyFn>(GetProcAddress(handle, "cipher_destroy"));
     auto freeFn = reinterpret_cast<FreeFn>(GetProcAddress(handle, "cipher_free"));
 
-    if (!createCaesar || !createVigenere || !createPlayfair || !encryptFn || !decryptFn || !destroyFn || !freeFn)
+    if (!createCaesar || !createVigenere || !encryptFn || !decryptFn || !destroyFn || !freeFn)
     {
         FreeLibrary(handle);
         throw std::runtime_error("Cipher library is missing one or more required exports "
@@ -118,13 +111,12 @@ std::string CipherHandle::RunOperation(const std::string& text, bool encrypt) co
 
     auto createCaesar = reinterpret_cast<CreateCaesarFn>(dlsym(handle, "cipher_create_caesar"));
     auto createVigenere = reinterpret_cast<CreateVigenereFn>(dlsym(handle, "cipher_create_vigenere"));
-    auto createPlayfair = reinterpret_cast<CreatePlayfairFn>(dlsym(handle, "cipher_create_playfair"));
     auto encryptFn = reinterpret_cast<EncryptFn>(dlsym(handle, "cipher_encrypt"));
     auto decryptFn = reinterpret_cast<DecryptFn>(dlsym(handle, "cipher_decrypt"));
     auto destroyFn = reinterpret_cast<DestroyFn>(dlsym(handle, "cipher_destroy"));
     auto freeFn = reinterpret_cast<FreeFn>(dlsym(handle, "cipher_free"));
 
-    if (!createCaesar || !createVigenere || !createPlayfair || !encryptFn || !decryptFn || !destroyFn || !freeFn)
+    if (!createCaesar || !createVigenere || !encryptFn || !decryptFn || !destroyFn || !freeFn)
     {
         dlclose(handle);
         throw std::runtime_error("Cipher library is missing one or more required exports");
@@ -140,8 +132,8 @@ std::string CipherHandle::RunOperation(const std::string& text, bool encrypt) co
     case Type::Vigenere:
         cipherHandle = createVigenere(keywordKey.c_str());
         break;
-    case Type::Playfair:
-        cipherHandle = createPlayfair(keywordKey.c_str());
+    default:
+        throw std::runtime_error("Unsupported cipher type at runtime");
         break;
     }
 
