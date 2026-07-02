@@ -29,6 +29,7 @@ private:
     void CommandPaste();
     void CommandSaveToFile();
     void CommandLoadFromFile();
+    void CommandPrint();
 
     void CommandEncryptDocument();
     void CommandSaveEncryptedToFile();

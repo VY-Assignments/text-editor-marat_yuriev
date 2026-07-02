@@ -158,6 +158,24 @@ void TextEditor::CommandPaste()
     document.PasteRows(ReadInt());
 }
 
+void TextEditor::CommandPrint()
+{
+    if (document.RowCount() > 0)
+    {
+        document.Print();
+        return;
+    }
+
+    if (hasEncryptedBuffer)
+    {
+        std::cout << "(Document is currently encrypted - showing raw ciphertext)\n";
+        std::cout << encryptedBuffer << "\n";
+        return;
+    }
+
+    std::cout << "Buffer is empty\n";
+}
+
 void TextEditor::CommandSaveToFile()
 {
     std::cout << "Enter file name to save: ";
@@ -319,7 +337,7 @@ void TextEditor::Run()
         case 11: CommandPaste(); break;
         case 12: document.Undo(); break;
         case 13: document.Redo(); break;
-        case 14: document.Print(); break;
+        case 14: CommandPrint(); break;
         case 15: CommandSaveToFile(); break;
         case 16: CommandLoadFromFile(); break;
         case 17: CommandEncryptDocument(); break;
