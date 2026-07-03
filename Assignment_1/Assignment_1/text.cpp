@@ -28,7 +28,7 @@ void Text::AppendText(const std::string& textToAdd)
 {
     SaveStateForUndo();
 
-    if (!rows.empty() && rows.back()->GetType() == LineType::Text)
+    if (canContinueTextBlock && !rows.empty() && rows.back()->GetType() == LineType::Text)
     {
         static_cast<TextLine*>(rows.back().get())->AppendText(textToAdd);
     }
@@ -37,6 +37,7 @@ void Text::AppendText(const std::string& textToAdd)
         rows.push_back(std::make_unique<TextLine>(textToAdd));
     }
 
+    canContinueTextBlock = true;
     std::cout << "Text appended\n";
 }
 
@@ -53,6 +54,7 @@ void Text::StartNewLine()
         rows.push_back(std::make_unique<TextLine>(""));
     }
 
+    canContinueTextBlock = false;
     std::cout << "New line started\n";
 }
 
@@ -177,7 +179,7 @@ void Text::PasteRows(int insertAtRow)
 
     int insertAt = insertAtRow;
     if (insertAt < 0 || insertAt > static_cast<int>(rows.size()))
-        insertAt = static_cast<int>(rows.size()); // out of range -> append at the end
+        insertAt = static_cast<int>(rows.size()); 
 
     SaveStateForUndo();
     for (size_t i = 0; i < clipboard.size(); i++)

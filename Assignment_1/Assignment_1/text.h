@@ -14,6 +14,8 @@ private:
     std::vector<std::unique_ptr<Line>> clipboard;
     static const int MaxHistory = 5;
 
+    bool canContinueTextBlock = false;
+
     std::vector<std::unique_ptr<Line>> CloneRows(const std::vector<std::unique_ptr<Line>>& source) const;
     void SaveStateForUndo();
 
